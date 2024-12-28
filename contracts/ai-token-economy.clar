@@ -124,3 +124,37 @@
         (ok reward)
     )
 )
+;; Add market trends functionality
+(define-map market-trends
+    { trend-id: uint }
+    {
+        trend-description: (string-ascii 100),
+        impact-factor: int,
+        created-block: uint
+    }
+)
+
+(define-data-var next-trend-id uint u1)
+
+(define-public (log-market-trend (trend-description (string-ascii 100)) (impact-factor int))
+    (let
+        (
+            (trend-id (var-get next-trend-id))
+        )
+        (map-set market-trends
+            { trend-id: trend-id }
+            {
+                trend-description: trend-description,
+                impact-factor: impact-factor,
+                created-block: block-height
+            }
+        )
+        ;; Increment the next trend ID
+        (var-set next-trend-id (+ trend-id u1))
+        (ok trend-id)
+    )
+)
+
+(define-read-only (get-market-trends)
+    (ok "Functionality for map iteration not supported directly.")
+)
