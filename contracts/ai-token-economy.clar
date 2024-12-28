@@ -36,3 +36,46 @@
 (define-read-only (get-dynamic-multiplier)
     (ok (var-get dynamic-multiplier))
 )
+;; Add staking functions
+(define-public (stake-tokens (amount uint))
+    (let
+        ((current-data (default-to 
+            { stake-amount: u0, reward-tier: "basic", last-activity-block: block-height }
+            (map-get? user-data { user: tx-sender })
+        )))
+        (asserts! (>= (var-get total-supply) amount) ERR-INSUFFICIENT-BALANCE)
+
+        ;; Update user data
+        (map-set user-data
+            { user: tx-sender }
+            {
+                stake-amount: (+ (get stake-amount current-data) amount),
+                reward-tier: (get reward-tier current-data),
+                last-activity-block: block-height
+            }
+        )
+
+        ;; Update total supply
+        (var-set total-supply (- (var-get total-supply) amount))
+
+        (ok true)
+    )
+)
+
+(define-public (unstake-tokens (amount uint))
+    (let
+        ((user-info (unwrap! (map-get? user-data { user: tx-sender }) ERR-INACTIVE-USER)))
+        (asserts! (>= (get stake-amount user-info) amount) ERR-INSUFFICIENT-BALANCE)
+
+        ;; Update user data
+        (map-set user-data
+            { user: tx-sender }
+            (merge user-info { stake-amount: (- (get stake-amount user-info) amount) })
+        )
+
+        ;; Update total supply
+        (var-set total-supply (+ (var-get total-supply) amount))
+
+        (ok true)
+    )
+)
