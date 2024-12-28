@@ -79,3 +79,48 @@
         (ok true)
     )
 )
+;; Add reward claiming functionality
+(define-public (claim-rewards)
+    (let
+        (
+            (user-info (unwrap! (map-get? user-data { user: tx-sender }) ERR-INACTIVE-USER))
+            (tier-multiplier (if (is-eq (get reward-tier user-info) "basic")
+                                  u1
+                                  (if (is-eq (get reward-tier user-info) "silver")
+                                      u2
+                                      (if (is-eq (get reward-tier user-info) "gold")
+                                          u3
+                                          u1))))
+            (reward (* (get stake-amount user-info) REWARD-MULTIPLIER-BASE tier-multiplier (var-get dynamic-multiplier)))
+        )
+        (asserts! (>= (var-get reward-pool) reward) ERR-INSUFFICIENT-BALANCE)
+
+        ;; Transfer reward
+        (var-set reward-pool (- (var-get reward-pool) reward))
+
+        ;; Update last activity block
+        (map-set user-data
+            { user: tx-sender }
+            (merge user-info { last-activity-block: block-height })
+        )
+
+        (ok reward)
+    )
+)
+
+(define-read-only (calculate-reward (user principal))
+    (let
+        (
+            (user-info (unwrap! (map-get? user-data { user: user }) ERR-INACTIVE-USER))
+            (tier-multiplier (if (is-eq (get reward-tier user-info) "basic")
+                                  u1
+                                  (if (is-eq (get reward-tier user-info) "silver")
+                                      u2
+                                      (if (is-eq (get reward-tier user-info) "gold")
+                                          u3
+                                          u1))))
+            (reward (* (get stake-amount user-info) REWARD-MULTIPLIER-BASE tier-multiplier (var-get dynamic-multiplier)))
+        )
+        (ok reward)
+    )
+)
