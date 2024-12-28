@@ -158,3 +158,17 @@
 (define-read-only (get-market-trends)
     (ok "Functionality for map iteration not supported directly.")
 )
+;; Add contract owner functionality
+(define-data-var contract-owner principal tx-sender)
+
+(define-public (adjust-dynamic-multiplier (new-multiplier uint))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-UNAUTHORIZED)
+        (var-set dynamic-multiplier new-multiplier)
+        (ok true)
+    )
+)
+
+(define-read-only (get-dynamic-multiplier)
+    (ok (var-get dynamic-multiplier))
+)
